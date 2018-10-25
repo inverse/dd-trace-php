@@ -1,11 +1,8 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests;
 
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-class ExampleTest extends TestCase
+class LaravelTest extends TestCase
 {
     /**
      * A basic test example.
@@ -16,6 +13,6 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(300);
+        $response->assertStatus(200);
     }
 }
