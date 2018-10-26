@@ -43,9 +43,10 @@ class PDO
             try {
                 $this->__construct(...$args);
                 PDO::storeConnectionParams($this, $args);
+                PDO::detectError($span, $this);
                 return $this;
             } catch (\Exception $e) {
-                $span->setError($e);
+                PDO::setErrorOnException($span, $e);
                 throw $e;
             } finally {
                 $scope->close();
@@ -63,10 +64,11 @@ class PDO
 
             try {
                 $result = $this->exec($statement);
+                PDO::detectError($span, $this);
                 $span->setTag('db.rowcount', $result);
                 return $result;
             } catch (\Exception $e) {
-                $span->setError($e);
+                PDO::setErrorOnException($span, $e);
                 throw $e;
             } finally {
                 $scope->close();
@@ -88,14 +90,15 @@ class PDO
 
             try {
                 $result = $this->query(...$args);
+                PDO::detectError($span, $this);
                 PDO::storeStatementFromConnection($this, $result);
                 try {
-                    $span->setTag('db.rowcount', $result->rowCount());
+                    $span->setTag('db.rowcount', $result != false ? $result->rowCount() : '');
                 } catch (\Exception $e) {
                 }
                 return $result;
             } catch (\Exception $e) {
-                $span->setError($e);
+                PDO::setErrorOnException($span, $e);
                 throw $e;
             } finally {
                 $scope->close();
@@ -111,9 +114,11 @@ class PDO
             PDO::setConnectionTags($this, $span);
 
             try {
-                return $this->commit();
+                $result = $this->commit();
+                PDO::detectError($span, $this);
+                return $result;
             } catch (\Exception $e) {
-                $span->setError($e);
+                PDO::setErrorOnException($span, $e);
                 throw $e;
             } finally {
                 $scope->close();
@@ -134,7 +139,7 @@ class PDO
                 PDO::storeStatementFromConnection($this, $result);
                 return $result;
             } catch (\Exception $e) {
-                $span->setError($e);
+                PDO::setErrorOnException($span, $e);
                 throw $e;
             } finally {
                 $scope->close();
@@ -152,18 +157,67 @@ class PDO
 
             try {
                 $result = $this->execute(...$params);
+                PDO::detectError($span, $this);
                 try {
                     $span->setTag('db.rowcount', $this->rowCount());
                 } catch (\Exception $e) {
                 }
                 return $result;
             } catch (\Exception $e) {
-                $span->setError($e);
+                PDO::setErrorOnException($span, $e);
                 throw $e;
             } finally {
                 $scope->close();
             }
         });
+    }
+
+    /**
+     * @param \DDTrace\Span $span
+     * @param \PDO|\PDOStatement $pdo_or_statement
+     */
+    public static function detectError($span, $pdo_or_statement)
+    {
+        $errorCode = $pdo_or_statement->errorCode();
+        // Error codes follows the ANSI SQL-92 convention of 5 total chars:
+        //   - 2 chars for class value
+        //   - 3 chars for subclass value
+        // Non error class values are: '00', '01', 'IM'
+        // @see: http://php.net/manual/en/pdo.errorcode.php
+        if (strlen($errorCode) != 5) {
+            return;
+        }
+
+        $class = strtoupper(substr($errorCode, 0, 2));
+        if (in_array($class, ['00', '01', 'IM'])) {
+            // Not an error
+            return;
+        }
+        $errorInfo = $pdo_or_statement->errorInfo();
+        $span->setRawError(
+            'SQL error: ' . $errorCode . '. Driver error: ' . $errorInfo[1],
+            get_class($pdo_or_statement) . ' error'
+        );
+    }
+
+    /**
+     * @param \DDTrace\Span $span
+     * @param \PDO $pdo
+     * @param null $exception
+     */
+    public static function setErrorOnException($span, $exception)
+    {
+        $span->setRawError(
+            self::extractErrorInfo($exception->getMessage()),
+            get_class($exception)
+        );
+    }
+
+    private static function extractErrorInfo($message)
+    {
+        $matches = [];
+        $isKnownFormat = preg_match('/^(SQLSTATE\[\w.*\] \[\d.*\]).*/', $message, $matches);
+        return $isKnownFormat ? ('Sql error: ' . $matches[1]) : 'Sql error';
     }
 
     private static function parseDsn($dsn)
@@ -206,6 +260,10 @@ class PDO
 
     public static function storeStatementFromConnection($pdo, $stmt)
     {
+        if (!$stmt) {
+            // When an error occurs 'FALSE' will be returned in place of the statement.
+            return;
+        }
         $pdoHash = spl_object_hash($pdo);
         if (isset(self::$connections[$pdoHash])) {
             self::$statements[spl_object_hash($stmt)] = $pdoHash;

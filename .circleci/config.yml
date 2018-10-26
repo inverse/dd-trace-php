@@ -13,8 +13,17 @@ aliases:
       - DD_APM_ENABLED=true
       - DD_BIND_HOST=0.0.0.0
       - DD_API_KEY=invalid_key_but_this_is_fine
+
   - &IMAGE_DOCKER_REDIS
     image: circleci/redis:4.0-alpine
+
+  - &IMAGE_DOCKER_MYSQL
+    image: mysql:5.6
+    environment:
+      - MYSQL_ROOT_PASSWORD=test
+      - MYSQL_PASSWORD=test
+      - MYSQL_USER=test
+      - MYSQL_DATABASE=test
 
   - &STEP_EXT_INSTALL
     run:
@@ -177,6 +186,7 @@ jobs:
       - image: datadog/docker-library:ddtrace_php_5_6
       - <<: *IMAGE_DOCKER_DD_AGENT
       - <<: *IMAGE_DOCKER_REDIS
+      - <<: *IMAGE_DOCKER_MYSQL
 
   "php-7.0":
     <<: *JOB_PHP_DEFAULTS
@@ -184,6 +194,7 @@ jobs:
       - image: datadog/docker-library:ddtrace_php_7_0
       - <<: *IMAGE_DOCKER_DD_AGENT
       - <<: *IMAGE_DOCKER_REDIS
+      - <<: *IMAGE_DOCKER_MYSQL
 
   "php-7.1":
     <<: *JOB_PHP_DEFAULTS
@@ -191,6 +202,7 @@ jobs:
       - image: datadog/docker-library:ddtrace_php_7_1
       - <<: *IMAGE_DOCKER_DD_AGENT
       - <<: *IMAGE_DOCKER_REDIS
+      - <<: *IMAGE_DOCKER_MYSQL
 
   "php-7.2":
     <<: *JOB_PHP_DEFAULTS
@@ -198,6 +210,7 @@ jobs:
       - image: datadog/docker-library:ddtrace_php_7_2
       - <<: *IMAGE_DOCKER_DD_AGENT
       - <<: *IMAGE_DOCKER_REDIS
+      - <<: *IMAGE_DOCKER_MYSQL
 
 workflows:
   version: 2
