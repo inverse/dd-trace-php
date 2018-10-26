@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests;
+namespace Tests\Version_5;
 
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -16,7 +16,8 @@ abstract class TestCase extends BaseTestCase
     {
         // This is set in phpunit.xml
         $versionUnderTest = getenv('LARAVEL_VERSION');
-        $app = require __DIR__.'/../' . $versionUnderTest . '/bootstrap/app.php';
+        $bootstrapScript = getenv('BOOTSTRAP_SCRIPT');
+        $app = require __DIR__ . '/../../' . $versionUnderTest . '/' . $bootstrapScript;
 
         $app->make(Kernel::class)->bootstrap();
 

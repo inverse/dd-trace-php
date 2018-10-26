@@ -29,7 +29,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "../tests/"
+            "Tests\\": "../tests/Version_5"
         }
     },
     "extra": {
@@ -48,7 +48,8 @@
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover"
-        ]
+        ],
+        "test": "phpunit --colors=always"
     },
     "config": {
         "preferred-install": "dist",

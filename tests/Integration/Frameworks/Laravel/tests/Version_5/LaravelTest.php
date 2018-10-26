@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests;
+namespace Tests\Version_5;
 
 class LaravelTest extends TestCase
 {

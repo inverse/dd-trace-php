@@ -10,7 +10,7 @@
          stopOnFailure="false">
     <testsuites>
         <testsuite name="Integration">
-            <directory suffix="Test.php">../Tests</directory>
+            <directory suffix="Test.php">../tests/Version_5</directory>
         </testsuite>
     </testsuites>
     <filter>
@@ -26,5 +26,6 @@
         <env name="QUEUE_DRIVER" value="sync"/>
         <env name="MAIL_DRIVER" value="array"/>
         <env name="LARAVEL_VERSION" value="Version_5_7"/>
+        <env name="BOOTSTRAP_SCRIPT" value="bootstrap/app.php"/>
     </php>
 </phpunit>
